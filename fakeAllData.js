@@ -40,7 +40,7 @@ function insertFakeAllData(io) {
           'device_1',
           random(20, 35),  // temp
           random(40, 70),  // hum
-          random(5, 50),   // pm2.5
+          random(5, 200),   // pm2.5
           random(0, 5),    // nh3
           random(0, 2),    // h2s
         ]

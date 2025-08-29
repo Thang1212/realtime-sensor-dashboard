@@ -1,0 +1,72 @@
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+  <h1 class="h2">Chất lượng không khí (PM2.5)</h1>
+</div>
+
+<canvas id="airQualityChart" width="900" height="380"></canvas>
+
+<script>
+  const ctxAQ = document.getElementById("airQualityChart").getContext("2d");
+
+  const airQualityChart = new Chart(ctxAQ, {
+    type: "bar",
+    data: {
+      labels: [], // timestamp
+      datasets: [{
+        label: "PM2.5",
+        data: [],
+        backgroundColor: [],
+        borderColor: "black",
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: {
+          beginAtZero: true,
+          suggestedMax: 100, // tối đa PM2.5
+          title: {
+            display: true,
+            text: "PM2.5 (µg/m³)"
+          }
+        },
+        x: {
+          title: {
+            display: true,
+            text: "Thời gian"
+          }
+        }
+      },
+      plugins: {
+        legend: {
+          display: false
+        }
+      }
+    }
+  });
+
+  // Hàm xác định màu theo mức độ
+  function getAirQualityColor(pm25) {
+    if (pm25 <= 50) return "green";         // An toàn
+    if (pm25 <= 100) return "orange";       // Đáng lo ngại
+    return "red";                            // Nguy hiểm
+  }
+
+  // Realtime update
+  socket.on("new_environment", (env) => {
+    const time = new Date(env.timestamp).toLocaleTimeString("vi-VN", { hour12: false });
+
+    airQualityChart.data.labels.push(time);
+    airQualityChart.data.datasets[0].data.push(env.pm25);
+    airQualityChart.data.datasets[0].backgroundColor.push(getAirQualityColor(env.pm25));
+
+    // Giữ tối đa 20 điểm
+    if (airQualityChart.data.labels.length > 20) {
+      airQualityChart.data.labels.shift();
+      airQualityChart.data.datasets[0].data.shift();
+      airQualityChart.data.datasets[0].backgroundColor.shift();
+    }
+
+    airQualityChart.update();
+  });
+</script>
