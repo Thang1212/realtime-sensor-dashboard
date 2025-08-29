@@ -13,7 +13,7 @@
         <tbody>
             <% envData.forEach((env) => { %>
                 <tr>
-                    <td><%= new Date(env.timestamp).toLocaleString("vi-VN") %></td>
+                    <td><%= formatDateTimeVN(env.timestamp) %></td>
                     <td><%= env.hum %></td>
                     <td><%= env.pm25 %></td>
                     <td><%= env.nh3 %></td>
@@ -24,15 +24,28 @@
     </table>
 </div>
 
+
 <script>
+  // Hàm format timestamp sang giờ Việt Nam
+  function formatDateTimeVN(dateStr) {
+    const d = new Date(dateStr);
+    return d.toLocaleString("vi-VN", {
+      timeZone: "Asia/Ho_Chi_Minh",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      day: "2-digit",
+      month: "numeric",
+      year: "numeric"
+    }).replace(",", "");
+  }
+
   // Khi server bắn dữ liệu mới
   socket.on("new_environment", (env) => {
-    // console.log("new socket received:", env);
-
     const table = document.querySelector("#env-table tbody");
     const row = document.createElement("tr");
     row.innerHTML = `
-      <td>${new Date(env.timestamp).toISOString()}</td>
+      <td>${formatDateTimeVN(env.timestamp)}</td>
       <td>${env.hum}</td>
       <td>${env.pm25}</td>
       <td>${env.nh3}</td>

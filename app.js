@@ -13,6 +13,8 @@ const insertFakeAllData = require("./fakeAllData");
 const route = require('./routes')
 const db = require('./config/db')
 
+const { formatDateTimeVN } = require("./helpers/formatDateTimeVN"); // đường dẫn tùy cấu trúc của bạn
+
 // .env configuration
 dotenv.config();
 
@@ -45,7 +47,6 @@ route(app);
 // Xuất io để file khác dùng
 // module.exports = { app, server, io };
 
-console.log("hehe 1");
 // Socket.IO
 io.on("connection", (socket) => {
   console.log("Client connected:", socket.id);
@@ -54,12 +55,14 @@ io.on("connection", (socket) => {
     console.log("Client disconnected:", socket.id);
   });
 });
-console.log("hehe 2");
 
 // Xuất io để controller dùng emit
 app.set("io", io);
 
 insertFakeAllData(io);
+
+// Helpers
+app.locals.formatDateTimeVN = formatDateTimeVN;
 
 // Start server
 server.listen(port, () => {

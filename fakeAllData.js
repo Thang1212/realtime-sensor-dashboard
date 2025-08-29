@@ -1,4 +1,5 @@
 const { pool } = require("./config/db");
+const { formatDateTimeVN } = require("./helpers/formatDateTimeVN");
 
 // Hàm tạo số ngẫu nhiên
 const random = (min, max) => +(Math.random() * (max - min) + min).toFixed(2);
@@ -48,6 +49,7 @@ function insertFakeAllData(io) {
       io.emit("new_temperature", temperatureResult.rows[0]);
       io.emit("new_pressure", pressureResult.rows[0]);
       io.emit("new_environment", environmentResult.rows[0]);
+
       // console.log("Inserted & emitted new environment:", result.rows[0]);
       console.log(`✅ Inserted fake data at ${now.toISOString()}`);
     } catch (err) {

@@ -1,4 +1,5 @@
 const { pool } = require("../config/db");
+const { formatDateTimeVN } = require("../helpers/formatDateTimeVN");
 
 class HomeController {
   // [GET] /
@@ -10,7 +11,7 @@ class HomeController {
 
     res.render("home", {
       title: "Trang chủ",
-      envData: result.rows, // truyền vào view
+      envData: result.rows
     });
   }
 
