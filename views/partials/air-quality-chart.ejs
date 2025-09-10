@@ -1,72 +1,122 @@
-<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-  <h1 class="h2">Chất lượng không khí (PM2.5)</h1>
+<div class="card my-4">
+  <div class="card-header">
+    <h5 class="card-title mb-0">Air Quality</h5>
+  </div>
+  <div class="card-body text-center">
+    <canvas id="airQualityChart"></canvas>
+    <!-- <button id="randomizeAQ" class="btn btn-sm btn-primary mt-3">Randomize</button> -->
+    <div id="randomizeAQ"></div>
+  </div>
 </div>
 
-<canvas id="airQualityChart" width="900" height="380"></canvas>
-
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
 <script>
-  const ctxAQ = document.getElementById("airQualityChart").getContext("2d");
+  // ========================
+  // Constants
+  // ========================
+  const COLORS = ['rgb(140, 214, 16)', 'rgb(239, 198, 0)', 'rgb(231, 24, 49)'];
+  const MIN = 0;
+  const MAX = 500; // giả định thang đo AQI (bạn chỉnh theo chuẩn bạn muốn)
 
-  const airQualityChart = new Chart(ctxAQ, {
-    type: "bar",
-    data: {
-      labels: [], // timestamp
-      datasets: [{
-        label: "PM2.5",
-        data: [],
-        backgroundColor: [],
-        borderColor: "black",
-        borderWidth: 1
-      }]
-    },
-    options: {
-      responsive: true,
-      scales: {
-        y: {
-          beginAtZero: true,
-          suggestedMax: 100, // tối đa PM2.5
-          title: {
-            display: true,
-            text: "PM2.5 (µg/m³)"
-          }
-        },
-        x: {
-          title: {
-            display: true,
-            text: "Thời gian"
-          }
-        }
+  // Random generator
+  function rand(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
+  // Determine color index
+  function index(perc) {
+    return perc < 100 ? 0 : perc < 200 ? 1 : 2;
+  }
+
+  // Normalize giá trị về %
+  function normalize(value) {
+    let perc = (value / MAX) * 100;
+    return Math.min(100, Math.max(0, perc));
+  }
+
+  // Initial value
+  let value = rand(MIN, MAX);
+
+  // ========================
+  // Dataset
+  // ========================
+  const data = {
+    datasets: [{
+      data: [normalize(value), 100 - normalize(value)],
+      backgroundColor(ctx) {
+        if (ctx.type !== 'data') return;
+        if (ctx.index === 1) return 'rgb(234, 234, 234)'; // background track
+        return COLORS[index(ctx.raw)];
       },
+      borderWidth: 0,
+      cutout: "70%"
+    }]
+  };
+
+  // ========================
+  // Annotation
+  // ========================
+  const annotation = {
+    type: 'doughnutLabel',
+    content: ({chart}) => [
+      chart.data.datasets[0].data[0].toFixed(0) + ' %',
+      'Air Quality'
+    ],
+    drawTime: 'beforeDraw',
+    position: { y: '-50%' },
+    font: [{size: 40, weight: 'bold'}, {size: 16}],
+    color: ({chart}) => [COLORS[index(chart.data.datasets[0].data[0])], 'grey']
+  };
+
+  // ========================
+  // Config
+  // ========================
+  const config = {
+    type: 'doughnut',
+    data,
+    options: {
+      aspectRatio: 2,
+      circumference: 180,
+      rotation: -90,
       plugins: {
-        legend: {
-          display: false
+        legend: { display: false },
+        annotation: {
+          annotations: { annotation }
         }
       }
     }
+  };
+
+  // ========================
+  // Init chart
+  // ========================
+  const ctxAQ = document.getElementById('airQualityChart');
+  const airQualityChart = new Chart(ctxAQ, config);
+
+  // ========================
+  // Actions
+  // ========================
+  document.getElementById("randomizeAQ").addEventListener("click", () => {
+    const val = rand(MIN, MAX);
+    updateGauge(val);
   });
 
-  // Hàm xác định màu theo mức độ
-  function getAirQualityColor(pm25) {
-    if (pm25 <= 50) return "green";         // An toàn
-    if (pm25 <= 100) return "orange";       // Đáng lo ngại
-    return "red";                            // Nguy hiểm
-  }
-
-  // Realtime update
+  // ========================
+  // Socket.IO update
+  // ========================
   socket.on("new_environment", (env) => {
-    const time = new Date(env.timestamp).toLocaleTimeString("vi-VN", { hour12: false });
-
-    airQualityChart.data.labels.push(time);
-    airQualityChart.data.datasets[0].data.push(env.pm25);
-    airQualityChart.data.datasets[0].backgroundColor.push(getAirQualityColor(env.pm25));
-
-    // Giữ tối đa 20 điểm
-    if (airQualityChart.data.labels.length > 20) {
-      airQualityChart.data.labels.shift();
-      airQualityChart.data.datasets[0].data.shift();
-      airQualityChart.data.datasets[0].backgroundColor.shift();
-    }
-
-    airQualityChart.update();
+    // lấy chỉ số pm25 làm giá trị gauge
+    updateGauge(env.pm25);
   });
+
+  // ========================
+  // Update function
+  // ========================
+  function updateGauge(val) {
+    const perc = normalize(val);
+    airQualityChart.data.datasets[0].data[0] = perc;
+    airQualityChart.data.datasets[0].data[1] = 100 - perc;
+    airQualityChart.update();
+  }
 </script>
